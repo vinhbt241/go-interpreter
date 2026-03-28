@@ -260,6 +260,52 @@ func TestBooleanExpression(t *testing.T) {
 	}
 }
 
+func TestIfExpression(t *testing.T) {
+	input := "if (x < y) { x }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	assertStatementsLen(t, program.Statements, 1)
+
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	exp := assertExpressionType[*ast.IfExpression](t, stmt.Expression)
+	assertInfixExpresssion(t, exp.Condition, "x", "<", "y")
+
+	assertStatementsLen(t, exp.Consequence.Statements, 1)
+	consequence := assertStatementType[*ast.ExpressionStatement](t, exp.Consequence.Statements[0])
+	assertIdentifier(t, consequence.Expression, "x")
+
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative was not nil. got=%+v", exp.Alternative)
+	}
+}
+
+func TestIfElseExpression(t *testing.T) {
+	input := "if (x < y) { x } else { y }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	assertStatementsLen(t, program.Statements, 1)
+
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	exp := assertExpressionType[*ast.IfExpression](t, stmt.Expression)
+	assertInfixExpresssion(t, exp.Condition, "x", "<", "y")
+
+	assertStatementsLen(t, exp.Consequence.Statements, 1)
+	consequence := assertStatementType[*ast.ExpressionStatement](t, exp.Consequence.Statements[0])
+	assertIdentifier(t, consequence.Expression, "x")
+
+	assertStatementsLen(t, exp.Alternative.Statements, 1)
+	alternative := assertStatementType[*ast.ExpressionStatement](t, exp.Alternative.Statements[0])
+	assertIdentifier(t, alternative.Expression, "y")
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
