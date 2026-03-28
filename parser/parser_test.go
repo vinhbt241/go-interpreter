@@ -94,7 +94,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	assertIntegerLiteral(t, stmt.Expression, 5)
 }
 
-func TestPrefixExpressions(t *testing.T) {
+func TestPPrefixExpression(t *testing.T) {
 	prefixTests := []struct {
 		input        string
 		operator     string
@@ -115,6 +115,38 @@ func TestPrefixExpressions(t *testing.T) {
 		exp := assertExpressionType[*ast.PrefixExpression](t, stmt.Expression)
 		assertValue(t, exp.Operator, tt.operator)
 		assertIntegerLiteral(t, exp.Right, tt.integerValue)
+	}
+}
+
+func TestInfixExpression(t *testing.T) {
+	infixTests := []struct {
+		input      string
+		leftValue  int64
+		operator   string
+		rightValue int64
+	}{
+		{"5 + 5", 5, "+", 5},
+		{"5 - 5", 5, "-", 5},
+		{"5 * 5", 5, "*", 5},
+		{"5 / 5", 5, "/", 5},
+		{"5 < 5", 5, "<", 5},
+		{"5 > 5", 5, ">", 5},
+		{"5 == 5", 5, "==", 5},
+		{"5 != 5", 5, "!=", 5},
+	}
+
+	for _, tt := range infixTests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		assertParseErrors(t, p)
+		assertStatementsLen(t, program.Statements, 1)
+		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+		exp := assertExpressionType[*ast.InfixExpression](t, stmt.Expression)
+		assertIntegerLiteral(t, exp.Left, tt.leftValue)
+		assertValue(t, exp.Operator, tt.operator)
+		assertIntegerLiteral(t, exp.Right, tt.rightValue)
 	}
 }
 
