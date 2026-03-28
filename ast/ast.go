@@ -155,5 +155,12 @@ func (pe *PrefixExpression) TokenLiteral() string {
 }
 
 func (pe *PrefixExpression) String() string {
-	return pe.Token.Literal
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+
+	return out.String()
 }

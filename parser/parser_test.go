@@ -120,7 +120,9 @@ func TestPrefixExpressions(t *testing.T) {
 
 // helpers
 
-func assertParseErrors(t *testing.T, p *Parser) {
+func assertParseErrors(t testing.TB, p *Parser) {
+	t.Helper()
+
 	errors := p.Errors()
 	if len(errors) == 0 {
 		return
@@ -130,6 +132,7 @@ func assertParseErrors(t *testing.T, p *Parser) {
 	for _, msg := range errors {
 		t.Errorf("parse error: %q", msg)
 	}
+
 	t.FailNow()
 }
 
