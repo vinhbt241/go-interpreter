@@ -38,10 +38,10 @@ func TestLetStatement(t *testing.T) {
 	for i, tt := range tests {
 		stmt := program.Statements[i]
 
-		assertValue(t, stmt.TokenLiteral(), "let")
+		assertEquals(t, stmt.TokenLiteral(), "let")
 		letStmt := assertStatementType[*ast.LetStatement](t, stmt)
-		assertValue(t, letStmt.Name.Value, tt.expectedIdentifier)
-		assertValue(t, letStmt.Name.TokenLiteral(), tt.expectedIdentifier)
+		assertEquals(t, letStmt.Name.Value, tt.expectedIdentifier)
+		assertEquals(t, letStmt.Name.TokenLiteral(), tt.expectedIdentifier)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestReturnStatement(t *testing.T) {
 
 	for _, stmt := range program.Statements {
 		returnStmt := assertStatementType[*ast.ReturnStatement](t, stmt)
-		assertValue(t, returnStmt.TokenLiteral(), "return")
+		assertEquals(t, returnStmt.TokenLiteral(), "return")
 	}
 }
 
@@ -111,7 +111,7 @@ func TestPPrefixExpression(t *testing.T) {
 		assertStatementsLen(t, program.Statements, 1)
 		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
 		exp := assertExpressionType[*ast.PrefixExpression](t, stmt.Expression)
-		assertValue(t, exp.Operator, tt.operator)
+		assertEquals(t, exp.Operator, tt.operator)
 		assertIntegerLiteral(t, exp.Right, tt.integerValue)
 	}
 }
@@ -206,6 +206,29 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
+func TestBooleanExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"true;", true},
+		{"false;", false},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		assertParseErrors(t, p)
+		assertStatementsLen(t, program.Statements, 1)
+		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+		exp := assertExpressionType[*ast.Boolean](t, stmt.Expression)
+		assertEquals(t, exp.Value, tt.expected)
+		assertEquals(t, exp.TokenLiteral(), fmt.Sprintf("%v", tt.expected))
+	}
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
@@ -256,11 +279,11 @@ func assertExpressionType[T ast.Expression](t testing.TB, got ast.Expression) T 
 	return exp
 }
 
-func assertValue[T string | int64](t testing.TB, got T, want T) {
+func assertEquals(t testing.TB, got any, want any) {
 	t.Helper()
 
 	if got != want {
-		t.Errorf("wrong value. got=%v want=%v", got, want)
+		t.Errorf("not equal. got=%v want=%v", got, want)
 	}
 }
 
@@ -268,16 +291,16 @@ func assertIntegerLiteral(t testing.TB, exp ast.Expression, val int64) {
 	t.Helper()
 
 	integ := assertExpressionType[*ast.IntegerLiteral](t, exp)
-	assertValue(t, integ.Value, val)
-	assertValue(t, integ.TokenLiteral(), fmt.Sprintf("%d", val))
+	assertEquals(t, integ.Value, val)
+	assertEquals(t, integ.TokenLiteral(), fmt.Sprintf("%d", val))
 }
 
 func assertIdentifier(t testing.TB, exp ast.Expression, value string) {
 	t.Helper()
 
 	ident := assertExpressionType[*ast.Identifier](t, exp)
-	assertValue(t, ident.Value, value)
-	assertValue(t, ident.TokenLiteral(), value)
+	assertEquals(t, ident.Value, value)
+	assertEquals(t, ident.TokenLiteral(), value)
 }
 
 func assertLiteralExpression(t testing.TB, exp ast.Expression, expected any) {
@@ -298,6 +321,6 @@ func assertLiteralExpression(t testing.TB, exp ast.Expression, expected any) {
 func assertInfixExpresssion(t testing.TB, exp ast.Expression, left any, operator string, right any) {
 	opExp := assertExpressionType[*ast.InfixExpression](t, exp)
 	assertLiteralExpression(t, opExp.Left, left)
-	assertValue(t, opExp.Operator, operator)
+	assertEquals(t, opExp.Operator, operator)
 	assertLiteralExpression(t, opExp.Right, right)
 }
