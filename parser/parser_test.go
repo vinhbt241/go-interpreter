@@ -8,61 +8,51 @@ import (
 )
 
 func TestLetStatement(t *testing.T) {
-	input := `
-	let x = 5;
-	let y = 10;
-	let foobar = 242424;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-
-	assertParseErrors(t, p)
-
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
-	}
-
-	assertStatementsLen(t, program.Statements, 3)
-
 	tests := []struct {
+		input              string
 		expectedIdentifier string
+		expectedValue      any
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
 	}
 
-	for i, tt := range tests {
-		stmt := program.Statements[i]
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
 
-		assertEquals(t, stmt.TokenLiteral(), "let")
-		letStmt := assertStatementType[*ast.LetStatement](t, stmt)
-		assertEquals(t, letStmt.Name.Value, tt.expectedIdentifier)
-		assertEquals(t, letStmt.Name.TokenLiteral(), tt.expectedIdentifier)
+		assertParseErrors(t, p)
+		assertStatementsLen(t, program.Statements, 1)
+		stmt := program.Statements[0]
+		assertLetStatement(t, stmt, tt.expectedIdentifier, tt.expectedValue)
 	}
 }
 
 func TestReturnStatement(t *testing.T) {
-	input := `
-	return 5;
-	return 10;
-	return 224411;
-	`
+	tests := []struct {
+		input         string
+		expectedValue any
+	}{
+		{"return 5;", 5},
+		{"return foo;", "foo"},
+		{"return true", true},
+	}
 
-	l := lexer.New(input)
-	p := New(l)
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
 
-	program := p.ParseProgram()
+		assertParseErrors(t, p)
+		assertStatementsLen(t, program.Statements, 1)
 
-	assertParseErrors(t, p)
-	assertStatementsLen(t, program.Statements, 3)
-
-	for _, stmt := range program.Statements {
-		returnStmt := assertStatementType[*ast.ReturnStatement](t, stmt)
+		returnStmt := assertStatementType[*ast.ReturnStatement](t, program.Statements[0])
 		assertEquals(t, returnStmt.TokenLiteral(), "return")
+
+		val := returnStmt.ReturnValue
+		assertLiteralExpression(t, val, tt.expectedValue)
 	}
 }
 
@@ -540,4 +530,17 @@ func assertExpressionsLen(t testing.TB, arguments []ast.Expression, want int) {
 	if got != want {
 		t.Fatalf("wrong number of expressions. got=%d want=%d", got, want)
 	}
+}
+
+func assertLetStatement(t testing.TB, stmt ast.Statement, expectedIdent string, expectedValue any) {
+	t.Helper()
+
+	assertEquals(t, stmt.TokenLiteral(), "let")
+	letStmt := assertStatementType[*ast.LetStatement](t, stmt)
+
+	assertEquals(t, letStmt.Name.Value, expectedIdent)
+	assertEquals(t, letStmt.Name.TokenLiteral(), expectedIdent)
+
+	val := letStmt.Value
+	assertLiteralExpression(t, val, expectedValue)
 }
