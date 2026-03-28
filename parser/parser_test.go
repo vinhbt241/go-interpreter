@@ -306,6 +306,54 @@ func TestIfElseExpression(t *testing.T) {
 	assertIdentifier(t, alternative.Expression, "y")
 }
 
+func TestFunctionLiteral(t *testing.T) {
+	input := "fn(x, y) { x + y; }"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	assertStatementsLen(t, program.Statements, 1)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+
+	function := assertExpressionType[*ast.FunctionLiteral](t, stmt.Expression)
+	assertParametersLen(t, function.Parameters, 2)
+
+	assertLiteralExpression(t, function.Parameters[0], "x")
+	assertLiteralExpression(t, function.Parameters[1], "y")
+
+	assertStatementsLen(t, function.Body.Statements, 1)
+	bodyStmt := assertStatementType[*ast.ExpressionStatement](t, function.Body.Statements[0])
+	assertInfixExpresssion(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestFunctionParamaterParsing(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{input: "fn() {};", expectedParams: []string{}},
+		{input: "fn(x) {};", expectedParams: []string{"x"}},
+		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		assertParseErrors(t, p)
+
+		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+		function := assertExpressionType[*ast.FunctionLiteral](t, stmt.Expression)
+		assertParametersLen(t, function.Parameters, len(tt.expectedParams))
+		for i, ident := range tt.expectedParams {
+			assertLiteralExpression(t, function.Parameters[i], ident)
+		}
+	}
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
@@ -412,4 +460,13 @@ func assertBooleanLiteral(t testing.TB, exp ast.Expression, expected bool) {
 	boolExp := assertExpressionType[*ast.Boolean](t, exp)
 	assertEquals(t, boolExp.Value, expected)
 	assertEquals(t, boolExp.TokenLiteral(), fmt.Sprintf("%v", expected))
+}
+
+func assertParametersLen(t testing.TB, parameters []*ast.Identifier, want int) {
+	t.Helper()
+
+	got := len(parameters)
+	if got != want {
+		t.Fatalf("wrong number of parameters. got=%d want=%d", got, want)
+	}
 }
