@@ -76,9 +76,7 @@ func TestIdentifierExpression(t *testing.T) {
 	assertParseErrors(t, p)
 	assertStatementsLen(t, program.Statements, 1)
 	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
-	ident := assertExpressionType[*ast.Identifier](t, stmt.Expression)
-	assertValue(t, ident.Value, "foobar")
-	assertValue(t, ident.TokenLiteral(), "foobar")
+	assertIdentifier(t, stmt.Expression, "foobar")
 }
 
 func TestIntegerLiteralExpression(t *testing.T) {
@@ -143,10 +141,7 @@ func TestInfixExpression(t *testing.T) {
 		assertParseErrors(t, p)
 		assertStatementsLen(t, program.Statements, 1)
 		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
-		exp := assertExpressionType[*ast.InfixExpression](t, stmt.Expression)
-		assertIntegerLiteral(t, exp.Left, tt.leftValue)
-		assertValue(t, exp.Operator, tt.operator)
-		assertIntegerLiteral(t, exp.Right, tt.rightValue)
+		assertInfixExpresssion(t, stmt.Expression, tt.leftValue, tt.operator, tt.rightValue)
 	}
 }
 
@@ -275,4 +270,34 @@ func assertIntegerLiteral(t testing.TB, exp ast.Expression, val int64) {
 	integ := assertExpressionType[*ast.IntegerLiteral](t, exp)
 	assertValue(t, integ.Value, val)
 	assertValue(t, integ.TokenLiteral(), fmt.Sprintf("%d", val))
+}
+
+func assertIdentifier(t testing.TB, exp ast.Expression, value string) {
+	t.Helper()
+
+	ident := assertExpressionType[*ast.Identifier](t, exp)
+	assertValue(t, ident.Value, value)
+	assertValue(t, ident.TokenLiteral(), value)
+}
+
+func assertLiteralExpression(t testing.TB, exp ast.Expression, expected any) {
+	t.Helper()
+
+	switch v := expected.(type) {
+	case int:
+		assertIntegerLiteral(t, exp, int64(v))
+	case int64:
+		assertIntegerLiteral(t, exp, v)
+	case string:
+		assertIdentifier(t, exp, v)
+	default:
+		t.Errorf("type of exp not handled. got %T", exp)
+	}
+}
+
+func assertInfixExpresssion(t testing.TB, exp ast.Expression, left any, operator string, right any) {
+	opExp := assertExpressionType[*ast.InfixExpression](t, exp)
+	assertLiteralExpression(t, opExp.Left, left)
+	assertValue(t, opExp.Operator, operator)
+	assertLiteralExpression(t, opExp.Right, right)
 }
