@@ -223,6 +223,18 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"!(true == true)",
 			"(!(true == true))",
 		},
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for _, tt := range tests {
@@ -354,6 +366,56 @@ func TestFunctionParamaterParsing(t *testing.T) {
 	}
 }
 
+func TestCallExpression(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5)"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	assertStatementsLen(t, program.Statements, 1)
+
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	exp := assertExpressionType[*ast.CallExpression](t, stmt.Expression)
+
+	assertIdentifier(t, exp.Function, "add")
+	assertExpressionsLen(t, exp.Arguments, 3)
+
+	assertLiteralExpression(t, exp.Arguments[0], 1)
+	assertInfixExpresssion(t, exp.Arguments[1], 2, "*", 3)
+	assertInfixExpresssion(t, exp.Arguments[2], 4, "+", 5)
+}
+
+func TestCallExpressionParameters(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedIdent  string
+		expectedParams []string
+	}{
+		{input: "add();", expectedIdent: "add", expectedParams: []string{}},
+		{input: "add(1);", expectedIdent: "add", expectedParams: []string{"1"}},
+		{input: "add(1, 2 * 3, 4 + 5);", expectedIdent: "add", expectedParams: []string{"1", "(2 * 3)", "(4 + 5)"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		assertParseErrors(t, p)
+		stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+		exp := assertExpressionType[*ast.CallExpression](t, stmt.Expression)
+
+		assertIdentifier(t, exp.Function, tt.expectedIdent)
+
+		assertExpressionsLen(t, exp.Arguments, len(tt.expectedParams))
+		for i, ident := range tt.expectedParams {
+			assertEquals(t, exp.Arguments[i].String(), ident)
+		}
+	}
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
@@ -468,5 +530,14 @@ func assertParametersLen(t testing.TB, parameters []*ast.Identifier, want int) {
 	got := len(parameters)
 	if got != want {
 		t.Fatalf("wrong number of parameters. got=%d want=%d", got, want)
+	}
+}
+
+func assertExpressionsLen(t testing.TB, arguments []ast.Expression, want int) {
+	t.Helper()
+
+	got := len(arguments)
+	if got != want {
+		t.Fatalf("wrong number of expressions. got=%d want=%d", got, want)
 	}
 }
