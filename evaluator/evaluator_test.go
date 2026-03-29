@@ -22,6 +22,23 @@ func TestEvalIntegerExpression(t *testing.T) {
 	}
 }
 
+func TestEvalBooleanExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"true", true},
+		{"false", false},
+	}
+
+	for _, tt := range tests {
+		evaluated := prepareObject(tt.input)
+		assertBooleanObject(t, evaluated, tt.expected)
+	}
+}
+
+//helpers
+
 func prepareObject(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -29,8 +46,6 @@ func prepareObject(input string) object.Object {
 
 	return Eval(program)
 }
-
-//helpers
 
 func assertObjectType[T object.Object](t testing.TB, got object.Object) T {
 	t.Helper()
@@ -50,5 +65,15 @@ func assertIntegerObject(t testing.TB, got object.Object, want int64) {
 
 	if result.Value != want {
 		t.Errorf("wrong value. got=%d want=%d", result.Value, want)
+	}
+}
+
+func assertBooleanObject(t testing.TB, got object.Object, want bool) {
+	t.Helper()
+
+	result := assertObjectType[*object.Boolean](t, got)
+
+	if result.Value != want {
+		t.Errorf("wrong value. got=%t want=%t", result.Value, want)
 	}
 }
