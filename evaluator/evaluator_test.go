@@ -86,6 +86,31 @@ func TestBangOperator(t *testing.T) {
 	}
 }
 
+func TestIfElseExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected any
+	}{
+		{"if (true) { 10 }", 10},
+		{"if (false) { 10 }", nil},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 > 2) { 10 }", nil},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+	}
+
+	for _, tt := range tests {
+		evaluated := prepareObject(tt.input)
+		interger, ok := tt.expected.(int)
+		if ok {
+			assertIntegerObject(t, evaluated, int64(interger))
+		} else {
+			assertNullObject(t, evaluated)
+		}
+	}
+}
+
 //helpers
 
 func prepareObject(input string) object.Object {
@@ -124,5 +149,13 @@ func assertBooleanObject(t testing.TB, got object.Object, want bool) {
 
 	if result.Value != want {
 		t.Errorf("wrong value. got=%t want=%t", result.Value, want)
+	}
+}
+
+func assertNullObject(t testing.TB, got object.Object) {
+	t.Helper()
+
+	if got != NULL {
+		t.Errorf("object is not NULL. got %T (%+v)", got, got)
 	}
 }
