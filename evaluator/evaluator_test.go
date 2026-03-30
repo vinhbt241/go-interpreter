@@ -254,6 +254,20 @@ func TestFunctionApplication(t *testing.T) {
 	}
 }
 
+func TestClosures(t *testing.T) {
+	input := `
+		let newAdder = fn(x) {
+			fn(y) { x + y };
+		};
+
+		let addTwo = newAdder(2);
+		addTwo(2);
+	`
+
+	evaluated := prepareObject(input)
+	assertIntegerObject(t, evaluated, 4)
+}
+
 //helpers
 
 func prepareObject(input string) object.Object {
