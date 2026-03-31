@@ -225,6 +225,14 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+		},
 	}
 
 	for _, tt := range tests {
@@ -419,7 +427,7 @@ func TestStringLiteralExpression(t *testing.T) {
 	assertEquals(t, literal.Value, "hello, world")
 }
 
-func TestParsingArrayLiterals(t *testing.T) {
+func TestArrayLiterals(t *testing.T) {
 	input := "[1, 2 * 2, 3 + 3]"
 
 	l := lexer.New(input)
@@ -437,6 +445,20 @@ func TestParsingArrayLiterals(t *testing.T) {
 	assertIntegerLiteral(t, array.Elements[0], 1)
 	assertInfixExpresssion(t, array.Elements[1], 2, "*", 2)
 	assertInfixExpresssion(t, array.Elements[2], 3, "+", 3)
+}
+
+func TestIndexExpression(t *testing.T) {
+	input := "myArray[1 + 1]"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	indexExp := assertExpressionType[*ast.IndexExpression](t, stmt.Expression)
+	assertIdentifier(t, indexExp.Left, "myArray")
+	assertInfixExpresssion(t, indexExp.Index, 1, "+", 1)
 }
 
 // helpers
@@ -483,7 +505,7 @@ func assertExpressionType[T ast.Expression](t testing.TB, got ast.Expression) T 
 	exp, ok := got.(T)
 
 	if !ok {
-		t.Fatalf("wrong expression type. got=%T want %T", *new(T), got)
+		t.Fatalf("wrong expression type. got=%T want %T", got, *new(T))
 	}
 
 	return exp
