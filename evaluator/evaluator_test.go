@@ -310,6 +310,10 @@ func TestBuiltinFunction(t *testing.T) {
 		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
 		{`first([1])`, 1},
 		{`first([])`, NULL},
+		{`first([1, 2, 3])`, 1},
+		{`last([1])`, 1},
+		{`last([])`, NULL},
+		{`last([1, 2, 3])`, 3},
 	}
 
 	for _, tt := range tests {
