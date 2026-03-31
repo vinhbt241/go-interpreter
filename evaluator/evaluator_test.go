@@ -325,6 +325,21 @@ func TestBuiltinFunction(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	evaluated := prepareObject(input)
+	result := assertObjectType[*object.Array](t, evaluated)
+
+	if len(result.Elements) != 3 {
+		t.Fatalf("array has wrong num of elements. got=%d", len(result.Elements))
+	}
+
+	assertIntegerObject(t, result.Elements[0], 1)
+	assertIntegerObject(t, result.Elements[1], 4)
+	assertIntegerObject(t, result.Elements[2], 6)
+}
+
 //helpers
 
 func prepareObject(input string) object.Object {
