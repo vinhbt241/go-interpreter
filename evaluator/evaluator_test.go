@@ -268,6 +268,17 @@ func TestClosures(t *testing.T) {
 	assertIntegerObject(t, evaluated, 4)
 }
 
+func TestStringLiteral(t *testing.T) {
+	input := `"Hello World!"`
+
+	evaluated := prepareObject(input)
+	str := assertObjectType[*object.String](t, evaluated)
+
+	if str.Value != "Hello World!" {
+		t.Errorf("String has wrong value. got=%q", str.Value)
+	}
+}
+
 //helpers
 
 func prepareObject(input string) object.Object {
