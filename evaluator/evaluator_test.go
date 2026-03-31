@@ -298,6 +298,33 @@ func TestStringConcatenation(t *testing.T) {
 	}
 }
 
+func TestBuiltinFunction(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected any
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "argument to `len` not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for _, tt := range tests {
+		evaluated := prepareObject(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			assertIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errorObj := assertObjectType[*object.Error](t, evaluated)
+			if errorObj.Message != expected {
+				t.Errorf("wrong error message. expected=%q, got=%q", expected, errorObj.Message)
+			}
+		}
+	}
+}
+
 //helpers
 
 func prepareObject(input string) object.Object {
