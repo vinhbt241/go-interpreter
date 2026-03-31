@@ -406,6 +406,19 @@ func TestCallExpressionParameters(t *testing.T) {
 	}
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello, world";`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	literal := assertExpressionType[*ast.StringLiteral](t, stmt.Expression)
+	assertEquals(t, literal.Value, "hello, world")
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
