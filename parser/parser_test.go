@@ -419,6 +419,26 @@ func TestStringLiteralExpression(t *testing.T) {
 	assertEquals(t, literal.Value, "hello, world")
 }
 
+func TestParsingArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	array := assertExpressionType[*ast.ArrayLiteral](t, stmt.Expression)
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("len(array.Elements) not 3. got=%d", len(array.Elements))
+	}
+
+	assertIntegerLiteral(t, array.Elements[0], 1)
+	assertInfixExpresssion(t, array.Elements[1], 2, "*", 2)
+	assertInfixExpresssion(t, array.Elements[2], 3, "+", 3)
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
