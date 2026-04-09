@@ -461,6 +461,82 @@ func TestIndexExpression(t *testing.T) {
 	assertInfixExpresssion(t, indexExp.Index, 1, "+", 1)
 }
 
+func TestParsingHashLiteralStringKeys(t *testing.T) {
+	input := `{"one": 1, "two": 2, "three": 3}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	hash := assertExpressionType[*ast.HashLiteral](t, stmt.Expression)
+	assertEquals(t, len(hash.Pairs), 3)
+
+	expected := map[string]int64{
+		"one":   1,
+		"two":   2,
+		"three": 3,
+	}
+
+	for key, value := range hash.Pairs {
+		literal := assertExpressionType[*ast.StringLiteral](t, key)
+		expectedValue := expected[literal.String()]
+
+		assertIntegerLiteral(t, value, expectedValue)
+	}
+}
+
+func TestParsingEmptyHashLiteral(t *testing.T) {
+	input := "{}"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	hash := assertExpressionType[*ast.HashLiteral](t, stmt.Expression)
+	assertEquals(t, len(hash.Pairs), 0)
+}
+
+func TestParsingHashLiteralsWithExpressions(t *testing.T) {
+	input := `{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	assertParseErrors(t, p)
+	stmt := assertStatementType[*ast.ExpressionStatement](t, program.Statements[0])
+	hash := assertExpressionType[*ast.HashLiteral](t, stmt.Expression)
+	assertEquals(t, len(hash.Pairs), 3)
+
+	tests := map[string]func(ast.Expression){
+		"one": func(e ast.Expression) {
+			assertInfixExpresssion(t, e, 0, "+", 1)
+		},
+		"two": func(e ast.Expression) {
+			assertInfixExpresssion(t, e, 10, "-", 8)
+		},
+		"three": func(e ast.Expression) {
+			assertInfixExpresssion(t, e, 15, "/", 5)
+		},
+	}
+
+	for key, value := range hash.Pairs {
+		literal := assertExpressionType[*ast.StringLiteral](t, key)
+
+		testFunc, ok := tests[literal.String()]
+		if !ok {
+			t.Errorf("no test function for key %q found", literal.String())
+			continue
+		}
+
+		testFunc(value)
+	}
+}
+
 // helpers
 
 func assertParseErrors(t testing.TB, p *Parser) {
