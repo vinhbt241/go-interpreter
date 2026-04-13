@@ -10,7 +10,13 @@ This is a short Monkey tutorial that should take no more than 10 minutes. It ass
 
 The Monkey REPL evaluates any Monkey expressions you enter and prints the result. Playing with Monkey in an interactive environment is a great way to explore what the language can do.
 
-Try this:
+To start the REPL, install correct Go version, which is 1.26.1. Then run the following command
+
+```
+go run main.go
+```
+
+You are good to go! Try this:
 
 ```
 >> "Hello World"
